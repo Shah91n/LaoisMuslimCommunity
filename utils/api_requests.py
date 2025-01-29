@@ -18,12 +18,17 @@ def fetch_prayer_times():
 
     # Build and print the full URL for debugging purposes
     full_url = f"{api_url}?latitude={params['latitude']}&longitude={params['longitude']}&method={params['method']}&date={params['date']}"
-    print(f"API Request URL: {full_url}")
+    # print(f"API Request URL: {full_url}")
 
     # Make the request
     response = requests.get(api_url, params=params)
 
     if response.status_code == 200:
-        return response.json()["data"]["timings"]
+        response_json = response.json()
+        if "data" in response_json and "timings" in response_json["data"]:
+            # print(response_json["data"]["timings"])
+            return response_json["data"]["timings"]
+        else:
+            raise Exception("Error: Unexpected response format")
     else:
         raise Exception(f"Error: {response.status_code}, {response.text}")
