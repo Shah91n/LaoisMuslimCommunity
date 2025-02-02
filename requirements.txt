@@ -1,3 +1,6 @@
 requests
 streamlit
 datetime
+streamlit-folium
+python-dotenv
+pandas
