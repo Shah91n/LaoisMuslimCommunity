@@ -1,10 +1,10 @@
-from utils.api_requests import fetch_prayer_times
-from datetime import datetime, timedelta
+from datetime import datetime
 import streamlit as st
-from utils.refresh_handler import handle_refresh_mechanism, handle_manual_refresh
+from utils.handlers import fetch_prayer_times, handle_manual_refresh, get_next_prayer, get_time_until, get_hijri_time
 from content.contact import display_contact_form
 from content.activity import display_activities
 from content.gallery import display_image_gallery
+import os
 
 # ------------------------ß--------------------------------------------------
 # Streamlit Page Config
@@ -16,34 +16,35 @@ st.set_page_config(
 	page_icon="🕌",
 )
 
-# Center the title with custom CSS
-st.markdown("""
-                <h1 style='text-align: center;'>
-                    🕌 Welcome to Laois Muslim Community of Ireland 🕌
-                </h1>
-            """, unsafe_allow_html=True)
+# get prayer times
+prayer_times = fetch_prayer_times()
 
-# Add welcome message and Quranic verse in main page
-st.markdown("""
-                <div style='text-align: center; padding: 20px; margin: 20px 0; font-style: italic;'>
-                    "Allah is the Light of the heavens and the earth... Light upon light.<br>
-                    Allah guideth unto His light whom He will."
-                </div>
-                <div style='text-align: center; font-size: 0.9em; color: #666;'>
-                    The Holy Quran, Sura Al-Noor, 35
-                </div>
-            """, unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Laois Muslim Community of Ireland</h1>", unsafe_allow_html=True)
 
-# Add welcome message and Quranic verse in main page
-st.markdown("""
-                <div style='text-align: center; padding: 20px; margin: 20px 0; font-style: italic;'>
-				A non-profit organisation concerned with preserving Islamic identity and the positive integration 
-				of Muslims into Irish society.
-                </div>
-                <div style='text-align: center; padding: 20px; margin: 20px 0; font-size: 0.9em; color: #666;'>
-                    مؤسسة غير ربحية تعني بالحفاظ على الهوية الإسلامية والدمج الإيجابي للمسلمين في المجتمع الأيرلندي
-                </div>
-            """, unsafe_allow_html=True)
+# Path to your background image
+main_image_path = os.path.join(os.getcwd(), 'images', 'main_image.png')
+	
+st.markdown("<div style='text-align: center;'>مؤسسة غير ربحية تعني بالحفاظ على الهوية الإسلامية والدمج الإيجابي للمسلمين في المجتمع الأيرلندي</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center;'>A non-profit organisation concerned with preserving Islamic identity and the positive integration of Muslims into Irish society.</div>", unsafe_allow_html=True)
+
+# Divider for better visual separation
+st.markdown("---")
+# Main prayers section in the center of the page
+st.markdown("<h2 style='text-align: center;'>Prayer Times</h2>", unsafe_allow_html=True)
+prayer_times_table = st.container()
+with prayer_times_table:
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.markdown(f"<div style='text-align: center; font-size: 1.5em;'>{prayer_times.get('Fajr', 'N/A')}</div><div style='text-align: center; font-size: 1.5em;'>Fajr</div>", unsafe_allow_html=True)
+    col2.markdown(f"<div style='text-align: center; font-size: 1.5em;'>{prayer_times.get('Dhuhr', 'N/A')}</div><div style='text-align: center; font-size: 1.5em;'>Dhuhr</div>", unsafe_allow_html=True)
+    col3.markdown(f"<div style='text-align: center; font-size: 1.5em;'>{prayer_times.get('Asr', 'N/A')}</div><div style='text-align: center; font-size: 1.5em;'>Asr</div>", unsafe_allow_html=True)
+    col4.markdown(f"<div style='text-align: center; font-size: 1.5em;'>{prayer_times.get('Maghrib', 'N/A')}</div><div style='text-align: center; font-size: 1.5em;'>Maghrib</div>", unsafe_allow_html=True)
+    col5.markdown(f"<div style='text-align: center; font-size: 1.5em;'>{prayer_times.get('Isha', 'N/A')}</div><div style='text-align: center; font-size: 1.5em;'>Isha</div>", unsafe_allow_html=True)
+# Divider for better visual separation
+st.markdown("---")
+
+st.markdown("##### Jummah'a (Friday) Prayer Time is always on 1:30 PM at St. Mary's Hall, Portlaoise")
+
+st.markdown("---")
 
 # After the welcome messages, add the navigation buttons
 col1, col2, col3, col4 = st.columns(4)
@@ -75,73 +76,34 @@ elif st.session_state.active_tab == 'gallery':
 elif st.session_state.active_tab == 'contact':
     display_contact_form()
 
-# ------------------------ß--------------------------------------------------
-# Utility functions
-def get_next_prayer(prayer_times):
-	current_time = datetime.now().strftime("%H:%M")
-	prayer_order = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
-
-	for prayer in prayer_order:
-		if prayer in prayer_times and current_time < prayer_times[prayer]:
-			return prayer, prayer_times[prayer]
-	return 'Fajr', prayer_times.get('Fajr', 'N/A') # Next day's Fajr
-
-def get_time_until(target_time_str):
-	current_time = datetime.now()
-	target_time = datetime.strptime(target_time_str, "%H:%M").replace(
-		year=current_time.year,
-		month=current_time.month,
-		day=current_time.day
-	)
-
-	# If the prayer time has passed today, it's for tomorrow
-	if target_time < current_time:
-		target_time += timedelta(days=1)
-
-	time_diff = target_time - current_time
-	total_seconds = int(time_diff.total_seconds())
-
-	hours = total_seconds // 3600
-	minutes = (total_seconds % 3600) // 60
-	seconds = total_seconds % 60
-
-	return f"{hours:02d}:{minutes:02d}:{seconds:02d} remaining"
-
-# get prayer times
-prayer_times = fetch_prayer_times()
-updated_times = handle_refresh_mechanism()
-if updated_times:
-	prayer_times = updated_times
-
 # Using sidebar for all content
 sidebar = st.sidebar
 
 # Top section - Date and Next Prayer
-sidebar.header("Prayer Times")
-sidebar.subheader("📍 Portlaoise, Ireland")
+sidebar.header("Rahman Masjid")
+sidebar.subheader("Portlaoise, Ireland")
 sidebar.write("**Imam:** Ahmed Halawa")
-sidebar.write(f"Date: {datetime.now().strftime('%d-%m-%Y')}")
+sidebar.write(f"**Date:** {datetime.now().strftime('%B %d, %Y')}")
+sidebar.write(f"**Hijri Date:** {get_hijri_time()}")
 
 next_prayer, next_time = get_next_prayer(prayer_times)
 sidebar.write(f"**Next Prayer:** {next_prayer} at {next_time}")
 sidebar.write(f"_{get_time_until(next_time)}_")
 
 # Refresh button right after remaining time
-if sidebar.button("🔄 Prayer Times"):
+if sidebar.button("🔄 Time"):
 	handle_manual_refresh()
-
-# Main prayers section
-sidebar.divider()
-main_prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
-for prayer in main_prayers:
-	sidebar.write(f"**{prayer}:** {prayer_times.get(prayer, 'N/A')}")
 
 # Additional times section
 sidebar.divider()
-sidebar.write("**Additional Times**")
-additional_prayers = ['Midnight', 'Firstthird', 'Lastthird']
-for prayer in additional_prayers:
-	sidebar.write(f"**{prayer}:** {prayer_times.get(prayer, 'N/A')}")
+sidebar.write("**Additional Info**")
+display_names = {
+    'Midnight': 'Midnight',
+    'Firstthird': 'First Third',
+    'Lastthird': 'Last Third'
+}
+for key, label in display_names.items():
+    sidebar.write(f"**{label}:** {prayer_times.get(key, 'N/A')}")
 
 # Add social media icons at the bottom of sidebar
 sidebar.divider()

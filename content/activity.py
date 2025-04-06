@@ -4,7 +4,7 @@ import pandas as pd
 def display_activities():
     st.header("Activities Schedule")
 
-    # Store activities data in lists for easy maintenance
+    # Store activities data in lists
     activities = [
         "Boys Halaqa",
         "Quran Halaqa (Men)",
